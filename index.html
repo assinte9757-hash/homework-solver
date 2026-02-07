@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>作业解题助手</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- 头部导航 -->
+        <header class="header">
+            <div class="header-left">
+                <h1 class="app-title"><i class="fas fa-camera"></i> 作业解题助手</h1>
+            </div>
+            <div class="header-right">
+                <button class="icon-btn history-btn" onclick="showHistory()">
+                    <i class="fas fa-history"></i>
+                    <span>历史记录</span>
+                </button>
+                <button class="icon-btn settings-btn" onclick="showSettings()">
+                    <i class="fas fa-cog"></i>
+                    <span>设置</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- 主内容区 -->
+        <main class="main-content">
+            <!-- 拍照区域 -->
+            <section class="camera-section" id="cameraSection">
+                <div class="camera-container">
+                    <video id="cameraPreview" autoplay playsinline></video>
+                    <canvas id="cameraCanvas" style="display: none;"></canvas>
+                    <div class="camera-overlay">
+                        <div class="camera-frame"></div>
+                    </div>
+                </div>
+                <div class="camera-controls">
+                    <button class="btn capture-btn" onclick="capturePhoto()">
+                        <i class="fas fa-camera"></i>
+                        <span>拍照</span>
+                    </button>
+                    <button class="btn gallery-btn" onclick="selectFromGallery()">
+                        <i class="fas fa-image"></i>
+                        <span>相册</span>
+                    </button>
+                </div>
+                <input type="file" id="galleryInput" accept="image/*" style="display: none;" onchange="handleGallerySelect(event)">
+            </section>
+
+            <!-- 预览区域 -->
+            <section class="preview-section" id="previewSection" style="display: none;">
+                <div class="preview-container">
+                    <img id="previewImage" alt="作业预览">
+                </div>
+                <div class="preview-controls">
+                    <button class="btn btn-secondary" onclick="retakePhoto()">
+                        <i class="fas fa-redo"></i>
+                        <span>重新拍照</span>
+                    </button>
+                    <button class="btn btn-primary" onclick="startAnalysis()">
+                        <i class="fas fa-search"></i>
+                        <span>开始识别</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- 加载中 -->
+            <section class="loading-section" id="loadingSection" style="display: none;">
+                <div class="loading-container">
+                    <div class="loading-spinner"></div>
+                    <p id="loadingText">正在识别作业内容...</p>
+                </div>
+            </section>
+
+            <!-- 结果展示区 -->
+            <section class="result-section" id="resultSection" style="display: none;">
+                <div class="result-header">
+                    <button class="btn btn-secondary" onclick="showCamera()">
+                        <i class="fas fa-arrow-left"></i>
+                        <span>返回</span>
+                    </button>
+                    <button class="btn btn-primary" onclick="exportToPDF()">
+                        <i class="fas fa-file-pdf"></i>
+                        <span>导出PDF</span>
+                    </button>
+                </div>
+
+                <div class="result-content" id="resultContent">
+                    <!-- 结果将通过JS动态生成 -->
+                </div>
+            </section>
+        </main>
+
+        <!-- 历史记录弹窗 -->
+        <div class="modal" id="historyModal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2><i class="fas fa-history"></i> 历史记录</h2>
+                    <button class="close-btn" onclick="closeHistory()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="history-list" id="historyList">
+                        <!-- 历史记录将通过JS动态生成 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 设置弹窗 -->
+        <div class="modal" id="settingsModal" style="display: none;">
+            <div class="modal-content settings-modal">
+                <div class="modal-header">
+                    <h2><i class="fas fa-cog"></i> 设置</h2>
+                    <button class="close-btn" onclick="closeSettings()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="settings-group">
+                        <h3>AI 服务配置</h3>
+                        <div class="form-group">
+                            <label for="aiProvider">AI 服务提供商</label>
+                            <select id="aiProvider" onchange="updateProviderFields()">
+                                <option value="aliyun">阿里云（默认）</option>
+                                <option value="baidu">百度智能云</option>
+                                <option value="tencent">腾讯云</option>
+                                <option value="openai">OpenAI</option>
+                            </select>
+                        </div>
+
+                        <!-- 阿里云配置 -->
+                        <div class="provider-config" id="aliyunConfig">
+                            <div class="form-group">
+                                <label for="aliyunAccessKeyId">AccessKey ID</label>
+                                <input type="text" id="aliyunAccessKeyId" placeholder="输入阿里云 AccessKey ID">
+                            </div>
+                            <div class="form-group">
+                                <label for="aliyunAccessKeySecret">AccessKey Secret</label>
+                                <input type="password" id="aliyunAccessKeySecret" placeholder="输入阿里云 AccessKey Secret">
+                            </div>
+                        </div>
+
+                        <!-- 百度配置 -->
+                        <div class="provider-config" id="baiduConfig" style="display: none;">
+                            <div class="form-group">
+                                <label for="baiduApiKey">API Key</label>
+                                <input type="text" id="baiduApiKey" placeholder="输入百度 API Key">
+                            </div>
+                            <div class="form-group">
+                                <label for="baiduSecretKey">Secret Key</label>
+                                <input type="password" id="baiduSecretKey" placeholder="输入百度 Secret Key">
+                            </div>
+                        </div>
+
+                        <!-- 腾讯云配置 -->
+                        <div class="provider-config" id="tencentConfig" style="display: none;">
+                            <div class="form-group">
+                                <label for="tencentSecretId">SecretId</label>
+                                <input type="text" id="tencentSecretId" placeholder="输入腾讯云 SecretId">
+                            </div>
+                            <div class="form-group">
+                                <label for="tencentSecretKey">SecretKey</label>
+                                <input type="password" id="tencentSecretKey" placeholder="输入腾讯云 SecretKey">
+                            </div>
+                        </div>
+
+                        <!-- OpenAI配置 -->
+                        <div class="provider-config" id="openaiConfig" style="display: none;">
+                            <div class="form-group">
+                                <label for="openaiApiKey">API Key</label>
+                                <input type="password" id="openaiApiKey" placeholder="输入 OpenAI API Key">
+                            </div>
+                            <div class="form-group">
+                                <label for="openaiBaseURL">Base URL（可选）</label>
+                                <input type="text" id="openaiBaseURL" placeholder="自定义 Base URL">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="enableCorrection" checked>
+                            启用答案纠错功能
+                        </label>
+                    </div>
+
+                    <button class="btn btn-primary" onclick="saveSettings()">
+                        <i class="fas fa-save"></i>
+                        <span>保存设置</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 提示消息 -->
+        <div class="toast" id="toast" style="display: none;">
+            <span id="toastMessage"></span>
+        </div>
+    </div>
+
+    <!-- 引入依赖库 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/ocr.js"></script>
+    <script src="js/ai.js"></script>
+    <script src="js/history.js"></script>
+    <script src="js/export.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
