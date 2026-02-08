@@ -202,16 +202,14 @@ const OCR = {
         }
 
         try {
-            const baseURL = config.baseURL || 'https://open.bigmodel.cn/api/paas/v4';
-            const model = config.model || 'glm-4v';
-
             const response = await fetch(
-                `${baseURL}/chat/completions`,
+                'https://open.bigmodel.cn/api/paas/v4/chat/completions',
                 {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${config.apiKey}`
+                        'Authorization': `Bearer ${config.apiKey}`,
+                        'Accept': 'application/json'
                     },
                     body: JSON.stringify({
                         model: model,
