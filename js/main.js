@@ -19,15 +19,50 @@ document.addEventListener('DOMContentLoaded', function() {
 // 请求相机权限
 async function requestCameraPermission() {
     try {
-        const constraints = {
-            video: {
-                facingMode: 'environment', // 使用后置摄像头
-                width: { ideal: 1920 },
-                height: { ideal: 1080 }
-            }
-        };
+        // 检查浏览器支持
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            throw new Error('浏览器不支持相机功能');
+        }
 
-        stream = await navigator.mediaDevices.getUserMedia(constraints);
+        // 移动端优先尝试后置摄像头，失败则尝试前置
+        let constraints;
+
+        // 检测是否为移动设备
+        const isMobile = /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+        if (isMobile) {
+            // 移动端：先尝试后置，失败则尝试前置
+            constraints = {
+                video: {
+                    facingMode: { ideal: 'environment' },
+                    width: { ideal: 1280, max: 1920 },
+                    height: { ideal: 720, max: 1080 }
+                }
+            };
+        } else {
+            // PC端：使用后置摄像头
+            constraints = {
+                video: {
+                    facingMode: 'environment',
+                    width: { ideal: 1920 },
+                    height: { ideal: 1080 }
+                }
+            };
+        }
+
+        try {
+            stream = await navigator.mediaDevices.getUserMedia(constraints);
+        } catch (primaryError) {
+            console.warn('主要摄像头请求失败:', primaryError);
+
+            // 如果是移动端且主要方式失败，尝试使用前置摄像头
+            if (isMobile && primaryError.name === 'NotAllowedError') {
+                constraints.video.facingMode = { ideal: 'user' };
+                stream = await navigator.mediaDevices.getUserMedia(constraints);
+            } else {
+                throw primaryError;
+            }
+        }
         const videoElement = document.getElementById('cameraPreview');
         videoElement.srcObject = stream;
     } catch (error) {
