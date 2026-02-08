@@ -104,7 +104,18 @@ async function startAnalysis() {
 
     // 检查配置
     if (!Config.validate()) {
-        showToast('请先完成AI服务配置');
+        const provider = Config.get('aiProvider');
+        const providerNames = {
+            'aliyun': '阿里云',
+            'baidu': '百度',
+            'tencent': '腾讯云',
+            'openai': 'OpenAI',
+            'zhipu': '智谱AI'
+        };
+        const providerName = providerNames[provider] || provider;
+        console.log('配置验证失败，当前提供商:', provider);
+        console.log('当前配置:', Config.current);
+        showToast(`请先完成${providerName}的配置`);
         showSettings();
         return;
     }
@@ -290,6 +301,10 @@ function showSettings() {
     document.getElementById('openaiApiKey').value = openaiConfig.apiKey || '';
     document.getElementById('openaiBaseURL').value = openaiConfig.baseURL || '';
 
+    const zhipuConfig = Config.get('zhipu') || {};
+    document.getElementById('zhipuApiKey').value = zhipuConfig.apiKey || '';
+    document.getElementById('zhipuBaseURL').value = zhipuConfig.baseURL || '';
+
     // 更新显示的字段
     updateProviderFields();
 
@@ -312,6 +327,18 @@ function updateProviderFields() {
 
     // 显示对应配置
     document.getElementById(`${provider}Config`).style.display = 'block';
+}
+
+// 重置配置
+function resetConfig() {
+    if (confirm('确定要重置所有配置吗？这将清除所有已保存的API密钥和设置。')) {
+        localStorage.removeItem('homework_config');
+        console.log('配置已重置');
+        closeSettings();
+        setTimeout(() => {
+            showToast('配置已重置，请重新设置');
+        }, 300);
+    }
 }
 
 // 保存设置
@@ -347,6 +374,13 @@ function saveSettings() {
             apiKey: document.getElementById('openaiApiKey').value.trim(),
             baseURL: document.getElementById('openaiBaseURL').value.trim() || 'https://api.openai.com/v1',
             model: 'gpt-4-vision-preview'
+        });
+
+        // 保存智谱配置
+        Config.set('zhipu', {
+            apiKey: document.getElementById('zhipuApiKey').value.trim(),
+            baseURL: document.getElementById('zhipuBaseURL').value.trim() || 'https://open.bigmodel.cn/api/paas/v4',
+            model: 'glm-4v'
         });
 
         // 保存到localStorage

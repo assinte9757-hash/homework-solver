@@ -194,6 +194,66 @@ const OCR = {
         }
     },
 
+    // 智谱GLM-4V OCR识别
+    async zhipuOCR(imageBase64) {
+        const config = Config.getAIProviderConfig();
+        if (!config.apiKey) {
+            throw new Error('请先配置智谱 API Key');
+        }
+
+        try {
+            const baseURL = config.baseURL || 'https://open.bigmodel.cn/api/paas/v4';
+            const model = config.model || 'glm-4v';
+
+            const response = await fetch(
+                `${baseURL}/chat/completions`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${config.apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: model,
+                        messages: [
+                            {
+                                role: 'user',
+                                content: [
+                                    {
+                                        type: 'image_url',
+                                        image_url: {
+                                            url: imageBase64
+                                        }
+                                    },
+                                    {
+                                        type: 'text',
+                                        text: '请识别这张图片中的作业题目内容，以清晰的格式输出每个题目。只输出题目内容，不要做任何解答。'
+                                    }
+                                ]
+                            }
+                        ],
+                        max_tokens: 2000,
+                        temperature: 0.3
+                    })
+                }
+            );
+
+            const data = await response.json();
+
+            if (data.choices && data.choices[0]) {
+                const content = data.choices[0].message.content;
+                return this.parseOpenAIResult(content);
+            } else if (data.error) {
+                throw new Error(`智谱OCR识别失败: ${data.error.message || data.error}`);
+            } else {
+                throw new Error('智谱OCR识别失败: 未知错误');
+            }
+        } catch (error) {
+            console.error('智谱OCR错误:', error);
+            throw error;
+        }
+    },
+
     // 解析阿里云OCR结果
     parseAliyunResult(data) {
         if (data && data.Results && data.Results.length > 0) {
@@ -249,6 +309,8 @@ const OCR = {
                 return await this.tencentOCR(imageBase64);
             case 'openai':
                 return await this.openaiOCR(imageBase64);
+            case 'zhipu':
+                return await this.zhipuOCR(imageBase64);
             default:
                 return await this.aliyunOCR(imageBase64);
         }

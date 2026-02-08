@@ -232,6 +232,80 @@ const AI = {
         }
     },
 
+    // 智谱 GLM 生成
+    async zhipuGenerate(prompt, question, userAnswer = '') {
+        const config = Config.getAIProviderConfig();
+        if (!config.apiKey) {
+            throw new Error('请先配置智谱 API Key');
+        }
+
+        try {
+            const baseURL = config.baseURL || 'https://open.bigmodel.cn/api/paas/v4';
+            const model = config.model || 'glm-4';
+
+            const response = await fetch(
+                `${baseURL}/chat/completions`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${config.apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: 'glm-4',
+                        messages: [
+                            {
+                                role: 'system',
+                                content: `你是一个专业的作业辅导AI助手。请按照以下JSON格式输出答案，不要输出任何其他内容：
+{
+  "questions": [
+    {
+      "number": "题目序号",
+      "question": "题目内容",
+      "solutionSteps": ["解题步骤1", "解题步骤2", ...],
+      "finalAnswer": "最终答案",
+      "knowledgePoints": ["知识点1", "知识点2", ...]
+    }
+  ]
+}
+
+要求：
+1. 识别每个题目，按顺序编号
+2. 提供详细的解题步骤
+3. 给出正确的最终答案
+4. 列出本题考察的知识点
+5. 确保输出的JSON格式正确，可以被JSON.parse()解析
+6. 如果用户提供了答案，需要分析其正确性，并在correction字段中标注错误位置
+7. 对于数学题，用标准数学符号
+8. 对于选择题，说明每个选项的正误原因`
+                            },
+                            {
+                                role: 'user',
+                                content: userAnswer ? `${prompt}\n\n用户答案：\n${userAnswer}` : prompt
+                            }
+                        ],
+                        temperature: 0.7,
+                        max_tokens: 4000
+                    })
+                }
+            );
+
+            const data = await response.json();
+
+            if (data.choices && data.choices[0]) {
+                const content = data.choices[0].message.content;
+                return this.parseAIResponse(content, userAnswer);
+            } else if (data.error) {
+                throw new Error(`智谱AI生成失败: ${data.error.message || data.error}`);
+            } else {
+                throw new Error('智谱AI生成失败: 未知错误');
+            }
+        } catch (error) {
+            console.error('智谱AI错误:', error);
+            throw error;
+        }
+    },
+
     // 解析AI响应
     parseAIResponse(content, userAnswer) {
         try {
@@ -332,6 +406,8 @@ ${question}
                 return await this.hunyuanGenerate(prompt, question, userAnswer);
             case 'openai':
                 return await this.openaiGenerate(prompt, question, userAnswer);
+            case 'zhipu':
+                return await this.zhipuGenerate(prompt, question, userAnswer);
             default:
                 return await this.qwenGenerate(prompt, question, userAnswer);
         }

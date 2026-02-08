@@ -126,6 +126,7 @@
                                 <option value="baidu">百度智能云</option>
                                 <option value="tencent">腾讯云</option>
                                 <option value="openai">OpenAI</option>
+                                <option value="zhipu">智谱AI（GLM-4V）</option>
                             </select>
                         </div>
 
@@ -176,6 +177,21 @@
                                 <input type="text" id="openaiBaseURL" placeholder="自定义 Base URL">
                             </div>
                         </div>
+
+                        <!-- 智谱配置 -->
+                        <div class="provider-config" id="zhipuConfig" style="display: none;">
+                            <div class="form-group">
+                                <label for="zhipuApiKey">API Key</label>
+                                <input type="password" id="zhipuApiKey" placeholder="输入智谱 API Key">
+                                <small style="color: #999; display: block; margin-top: 5px;">
+                                    获取地址: <a href="https://open.bigmodel.cn/usercenter/apikeys" target="_blank" style="color: #4CAF50;">https://open.bigmodel.cn/usercenter/apikeys</a>
+                                </small>
+                            </div>
+                            <div class="form-group">
+                                <label for="zhipuBaseURL">Base URL（可选）</label>
+                                <input type="text" id="zhipuBaseURL" placeholder="https://open.bigmodel.cn/api/paas/v4">
+                            </div>
+                        </div>
                     </div>
 
                     <div class="form-group">
@@ -185,10 +201,16 @@
                         </label>
                     </div>
 
-                    <button class="btn btn-primary" onclick="saveSettings()">
-                        <i class="fas fa-save"></i>
-                        <span>保存设置</span>
-                    </button>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-primary" onclick="saveSettings()" style="flex: 1;">
+                            <i class="fas fa-save"></i>
+                            <span>保存设置</span>
+                        </button>
+                        <button class="btn btn-secondary" onclick="resetConfig()">
+                            <i class="fas fa-trash"></i>
+                            <span>重置配置</span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

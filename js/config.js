@@ -22,6 +22,11 @@ const Config = {
             apiKey: '',
             baseURL: 'https://api.openai.com/v1',
             model: 'gpt-4-vision-preview'
+        },
+        zhipu: {
+            apiKey: '',
+            baseURL: 'https://open.bigmodel.cn/api/paas/v4',
+            model: 'glm-4v'
         }
     },
 
@@ -33,13 +38,27 @@ const Config = {
         const saved = localStorage.getItem('homework_config');
         if (saved) {
             try {
-                this.current = JSON.parse(saved);
+                const savedConfig = JSON.parse(saved);
+                // 深度合并：保留保存的配置，但用默认值填充缺失的字段
+                this.current = {
+                    ...this.defaults,
+                    ...savedConfig,
+                    // 确保每个提供商的配置都完整
+                    aliyun: { ...this.defaults.aliyun, ...savedConfig.aliyun },
+                    baidu: { ...this.defaults.baidu, ...savedConfig.baidu },
+                    tencent: { ...this.defaults.tencent, ...savedConfig.tencent },
+                    openai: { ...this.defaults.openai, ...savedConfig.openai },
+                    zhipu: { ...this.defaults.zhipu, ...savedConfig.zhipu }
+                };
+                console.log('配置初始化完成，当前AI提供商:', this.current.aiProvider);
+                console.log('智谱配置:', this.current.zhipu);
             } catch (e) {
                 console.error('解析配置失败:', e);
                 this.current = { ...this.defaults };
             }
         } else {
             this.current = { ...this.defaults };
+            console.log('使用默认配置');
         }
     },
 
@@ -77,6 +96,8 @@ const Config = {
             case 'tencent':
                 return config && config.secretId && config.secretKey;
             case 'openai':
+                return config && config.apiKey;
+            case 'zhipu':
                 return config && config.apiKey;
             default:
                 return false;
